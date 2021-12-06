@@ -1,0 +1,119 @@
+<html lang="en">
+  <head>
+    <title>three.js ar - paint</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <script src="https://rawcdn.githack.com/kripken/ammo.js/99d0ec0b1e26d7ccc13e013caba8e8a5c98d953b/builds/ammo.js"></script>
+<!--     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>     -->
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from "https://threejs.org/build/three.module.js";
+      import { TubePainter } from "https://threejs.org/examples/jsm/misc/TubePainter.js";
+
+      let container;
+      let camera, scene, renderer;
+      let controller, painter;
+      let painting = false
+      
+      let cursor = new THREE.Vector3();
+      let mouse = new THREE.Vector2();
+      let raycaster = new THREE.Raycaster();
+      
+      init();
+      animate();
+
+      function init() {
+        container = document.createElement("div");
+        document.body.appendChild(container);
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(
+          70,
+          window.innerWidth / window.innerHeight,
+          0.01,
+          20
+        );        
+				camera.position.set(1, 1, 1);
+        camera.lookAt(0, 0, 0)
+        camera.up.set( 0, 0, 1 );
+                
+        window.scene = scene
+
+        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+        light.position.set(0, 1, 0);
+        scene.add(light);
+        
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.shadowMap.enabled = true;
+				container.appendChild(renderer.domElement);
+        
+        painter = new TubePainter();
+        painter.setSize(0.4);
+        painter.mesh.material.side = THREE.DoubleSide;
+        scene.add(painter.mesh);
+
+        function getPosition(event) {
+          mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+          mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        	raycaster.setFromCamera( mouse, camera );
+          console.log(raycaster)          
+          let origin = raycaster.ray.origin
+          let direction = raycaster.ray.direction          
+          cursor.set(
+            origin.x + 1 * direction.x, 
+            origin.y + 1 * direction.y, 
+            origin.z + 1 * direction.z, 
+          )
+        	// const intersects = raycaster.intersectObjects( scene.children );
+        	// for ( let i = 0; i < intersects.length; i ++ ) {
+        	// intersects[ i ].object.material.color.set( 0xff0000 );
+        	// }
+        }
+        
+        window.addEventListener('mousedown', (event) => {
+          getPosition(event)
+          painting = true 
+          let x = event.clientX
+          let y = event.clientY
+          painter.moveTo(cursor);
+        })
+
+        window.addEventListener('mousemove', (event) => {
+          getPosition(event)                  
+          if (!painting) return 
+          console.log(event)
+          painter.lineTo(cursor);
+          painter.update();
+        })
+        
+        window.addEventListener('mouseup', (event) => {
+          console.log(event)
+          painting = false
+        })        
+
+        window.addEventListener("resize", onWindowResize);
+      }
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+				requestAnimationFrame(animate);
+        render()
+      }
+
+      function render() {
+        // handleController(controller);
+        renderer.render(scene, camera);
+      }
+    </script>
+  </body>
+</html>
